@@ -26,12 +26,13 @@ pnpm install
 ### 2. Configure environment variables
 
 ```bash
-cp .env.example .env
+cp env.example .env
 ```
 
 Edit `.env`:
 
 - `INNGEST_SIGNING_KEY` - Get from [Inngest Dashboard](https://app.inngest.com/) → Manage → Signing Key
+- `GH_USERNAME` - scope to PRs authored by this username
 - `GH_TOKEN` - GitHub personal access token with `actions:write` scope (only needed if `gh auth login` isn't configured)
 
 ### 3. Configure Inngest webhook

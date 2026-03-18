@@ -34,6 +34,21 @@ export interface FlakyAnalysis {
   analysis: string;
 }
 
+export async function getPRAuthor(
+  repo: string,
+  commitSha: string
+): Promise<string | null> {
+  try {
+    const { stdout } = await execAsync(
+      `gh pr list --repo ${repo} --search ${commitSha} --json author --jq '.[0].author.login'`
+    );
+    const author = stdout.trim();
+    return author || null;
+  } catch {
+    return null;
+  }
+}
+
 export function detectFlakyTests(jobs: Job[]): FlakyAnalysis {
   // Group jobs by base name (strip matrix params like "(ubuntu, node-18)")
   const jobGroups = new Map<string, Job[]>();

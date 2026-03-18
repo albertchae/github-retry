@@ -1,15 +1,34 @@
 import { inngest } from "./client.js";
-import { getRunJobs, rerunFailedJobs, detectFlakyTests } from "../github/api.js";
+import { getRunJobs, rerunFailedJobs, detectFlakyTests, getPRAuthor } from "../github/api.js";
 
 const MAX_RETRY_ATTEMPTS = 3;
+const GH_USERNAME = process.env.GH_USERNAME;
+
+if (!GH_USERNAME) {
+  console.error("[retry-failed-ci] ERROR: GH_USERNAME environment variable is required");
+  process.exit(1);
+}
 
 export const retryFailedCI = inngest.createFunction(
   { id: "retry-failed-ci" },
   { event: "github/workflow_run.failed" },
   async ({ event, step }) => {
-    const { run_id, repo, run_attempt, workflow_name, html_url } = event.data;
+    const { run_id, repo, run_attempt, workflow_name, html_url, commit_sha } = event.data;
 
     console.log(`[retry-failed-ci] ${repo} run ${run_id} (attempt ${run_attempt})`);
+
+    // Check if PR author matches configured username
+    const prAuthor = await step.run("get-pr-author", () =>
+      getPRAuthor(repo, commit_sha)
+    );
+
+    if (prAuthor !== GH_USERNAME) {
+      console.log(`[retry-failed-ci] Skipping: PR author "${prAuthor}" does not match "${GH_USERNAME}"`);
+      return {
+        action: "skipped",
+        reason: `PR author "${prAuthor}" does not match configured user`,
+      };
+    }
 
     if (run_attempt >= MAX_RETRY_ATTEMPTS) {
       console.log(`[retry-failed-ci] Skipping: max retries reached`);
