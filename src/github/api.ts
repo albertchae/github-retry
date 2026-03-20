@@ -49,7 +49,14 @@ export async function getPRAuthor(
   }
 }
 
-export function detectFlakyTests(jobs: Job[]): FlakyAnalysis {
+// Workflows that should never be considered flaky (legitimate failures, not flaky)
+const NEVER_FLAKY_WORKFLOWS = ["UnitTest"];
+
+export function detectFlakyTests(jobs: Job[], workflowName?: string): FlakyAnalysis {
+  // Skip flaky detection for excluded workflows
+  if (workflowName && NEVER_FLAKY_WORKFLOWS.includes(workflowName)) {
+    return { isFlaky: false, analysis: `Workflow "${workflowName}" excluded from flaky detection` };
+  }
   // Group jobs by base name (strip matrix params like "(ubuntu, node-18)")
   const jobGroups = new Map<string, Job[]>();
 
